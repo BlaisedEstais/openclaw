@@ -1,2 +1,2 @@
-# Preserve invited project/task summary regressions at the measured total with zero slack.
-6311490
+# Preserve invited usage membership/revocation and mixed private-source coverage at the measured total with zero slack.
+6311625
