@@ -56,7 +56,7 @@ import {
 import { startBrowserAuthRecovery } from "./browser-auth-recovery.tsx";
 import { createChatAttachmentHandoff } from "./chat-attachment-handoff.ts";
 import { createChatSubmissions } from "./chat-submissions.ts";
-import { createApplicationConfigCapability } from "./config.ts";
+import { createApplicationConfigCapability, type ReadOnlyConfigNotice } from "./config.ts";
 import { createConnectionBootstrapCoordinator } from "./connection-bootstrap.ts";
 import type { MountedApplicationShell } from "./context-types.ts";
 import type { ApplicationNavigationOptions, ApplicationContext } from "./context.ts";
@@ -97,7 +97,7 @@ export type ApplicationRuntime = {
   readonly context: ApplicationContext;
   readonly router: ApplicationRouter;
   readonly documentMode: ControlUiDocumentMode | null;
-  readonly managedModeNotice?: string;
+  readonly readOnlyConfig?: ReadOnlyConfigNotice;
   readonly warmBoot: boolean;
   readonly focusLocation: ControlUiFocusLocation | null;
   readonly pendingGatewayConnection: {
@@ -576,9 +576,8 @@ export function bootstrapApplication(
     context,
     router,
     documentMode,
-    get managedModeNotice() {
-      const notice = config.current.managedModeNotice;
-      return notice && isDocumentGateway() ? notice : undefined;
+    get readOnlyConfig() {
+      return isDocumentGateway() ? config.current.readOnlyConfig : undefined;
     },
     get warmBoot() {
       return warmBoot && gateway.connectionRevision === warmBootConnectionRevision;

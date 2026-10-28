@@ -85,8 +85,10 @@ export type ControlUiBootstrapConfig = {
   composerPredictionsEnabled?: boolean;
   seamColor?: string;
   environment?: ControlUiEnvironment;
-  /** Plain-text guidance from the deployment managing this Gateway. */
-  managedModeNotice?: string;
+  /** Whether this Gateway blocks writes to its configuration file. */
+  configReadOnly?: boolean;
+  /** Optional operator guidance shown alongside the read-only policy. */
+  configReadOnlyNotice?: string;
   /** Whether this Gateway's served UI may show the Discord community invitation. */
   communityInvite?: boolean;
   /** Fresh-draft model, runtime and reasoning preference policy; never a selection restriction. */

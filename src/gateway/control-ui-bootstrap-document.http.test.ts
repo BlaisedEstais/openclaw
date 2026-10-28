@@ -52,9 +52,6 @@ it.each([false, true])(
       "<!doctype html>\n<html><head></head><body><openclaw-app></openclaw-app></body></html>",
     );
     const name = '"><script>alert(1)</script> $$ $`';
-    const managedModeNotice = "Change Gateway settings in the deployment console.";
-    vi.stubEnv("OPENCLAW_CONTROL_UI_MANAGED_MODE_NOTICE", managedModeNotice);
-    onTestFinished(() => vi.unstubAllEnvs());
     const config: OpenClawConfig = {
       agents: { entries: { main: { workspace: root, identity: { name, emoji: "🔭" } } } },
       gateway: { terminal: { enabled: false } },
@@ -86,7 +83,6 @@ it.each([false, true])(
       assistantName: name,
       assistantAvatar: "🔭",
       terminalEnabled: false,
-      managedModeNotice,
       pluginControlUiModules: catalogFails ? [] : [plugin],
     });
     const document = await request("/control/chat/main/topic", true, true);

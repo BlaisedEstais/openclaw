@@ -151,33 +151,49 @@ it("publishes readiness when the retained sidebar's delayed module commits", asy
   }
 });
 
-it("shows the deployment's managed-mode notice across routes and clears it when omitted", async () => {
+it("shows the read-only banner only for the serving Gateway while its configuration is read-only", async () => {
   const { runtime, query, refresh, route } = await mountShell();
   const { config, gateway } = runtime.context;
-  const notice = "Change <config> in the deployment console.";
   const fetch = vi.spyOn(globalThis, "fetch");
-  fetch.mockResolvedValueOnce(Response.json({ managedModeNotice: notice }));
+  fetch.mockResolvedValueOnce(Response.json({ configReadOnly: true }));
   await config.refresh();
   refresh();
-  const banner = query("details.shell-managed-mode");
-  expect(banner?.querySelector("summary")?.textContent).toBe("Managed mode");
-  expect(banner?.querySelector("p")?.textContent).toBe(notice);
+  const banner = query(".shell-config-read-only");
+  expect(banner?.textContent?.trim()).toBe(
+    "Gateway configuration is read-only. To make changes, update the configuration file or deployment settings for this Gateway.",
+  );
+  expect(banner?.querySelector("a")).toBeNull();
   route("settings");
-  expect(query("details.shell-managed-mode")).toBe(banner);
+  expect(query(".shell-config-read-only")).toBe(banner);
+
+  const docsUrl = "https://docs.example.org/gateway";
+  const notice = `Use the <admin> console. ${docsUrl}`;
+  fetch.mockResolvedValueOnce(
+    Response.json({ configReadOnly: true, configReadOnlyNotice: notice }),
+  );
+  await config.refresh();
+  refresh();
+  const custom = query(".shell-config-read-only");
+  expect(custom?.textContent?.trim()).toBe(
+    "Gateway configuration is read-only. Use the <admin> console. Learn more",
+  );
+  expect(custom?.querySelector("a")?.href).toBe(docsUrl);
 
   const serving = gateway.connection;
   const connection = vi.spyOn(gateway, "connection", "get");
   connection.mockReturnValue({ ...serving, gatewayUrl: serving.gatewayUrl + "/another-gateway" });
   refresh();
-  expect(query("details.shell-managed-mode")).toBeNull();
+  expect(query(".shell-config-read-only")).toBeNull();
   connection.mockRestore();
   refresh();
-  expect(query("details.shell-managed-mode")).not.toBeNull();
+  expect(query(".shell-config-read-only")).not.toBeNull();
 
-  fetch.mockResolvedValueOnce(Response.json({}));
+  fetch.mockResolvedValueOnce(
+    Response.json({ configReadOnly: false, configReadOnlyNotice: notice }),
+  );
   await config.refresh();
   refresh();
-  expect(query("details.shell-managed-mode")).toBeNull();
+  expect(query(".shell-config-read-only")).toBeNull();
 });
 
 it("exposes the Templates navigation entry only while its Labs toggle is enabled", async () => {

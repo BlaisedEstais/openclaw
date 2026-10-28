@@ -116,35 +116,20 @@
   line-height: 1;
 }
 
-.shell-managed-mode {
+.shell-config-read-only {
   grid-area: notice;
   min-width: 0;
-  margin-right: var(--shell-dock-reserve-right);
-  padding-inline: var(--space-4);
+  margin: 0 var(--shell-dock-reserve-right) 0 0;
+  padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--info) 10%, var(--bg));
-  color: var(--text);
+  color: var(--text-strong);
   font-size: var(--control-ui-text-sm);
   text-align: center;
   overflow-wrap: anywhere;
-
-  summary {
-    width: fit-content;
-    max-width: 100%;
-    margin-inline: auto;
-    padding: var(--space-2);
-    color: var(--text-strong);
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  p {
-    max-width: 88ch;
-    margin: 0 auto var(--space-2);
-  }
 }
 
-.shell--nav-collapsed:not(.shell--mobile-nav) .shell-managed-mode {
+.shell--nav-collapsed:not(.shell--mobile-nav) .shell-config-read-only {
   padding-inline-start: var(--shell-chrome-safe-area-left);
 }
 

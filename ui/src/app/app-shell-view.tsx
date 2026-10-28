@@ -11,6 +11,7 @@ import {
   ContextNewSessionAction,
   renderNewSessionLink as NewSessionLink,
 } from "../components/solid/new-session-link.tsx";
+import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../lib/external-link.ts";
 import { KEYBOARD_SHORTCUT_COMBOS } from "../lib/keyboard-shortcut-contract.ts";
 import { t } from "../lib/reactive/i18n.ts";
 import { projectOwner } from "../lib/reactive/projection.ts";
@@ -342,15 +343,27 @@ export function ApplicationShell(props: {
             }
           />
         </Show>
-        <Show when={view().runtime.managedModeNotice}>
-          <details
-            class="shell-managed-mode"
-            open={!view().mobileNavLayout}
-            inert={view().mobileNavLayout && view().navDrawerOpen}
-          >
-            <summary>{t("nav.gateway.managedMode")}</summary>
-            <p>{view().runtime.managedModeNotice}</p>
-          </details>
+        <Show when={view().runtime.readOnlyConfig} keyed>
+          {(notice) => (
+            <p
+              class="shell-config-read-only"
+              inert={view().mobileNavLayout && view().navDrawerOpen}
+            >
+              <strong>{t("nav.gateway.configReadOnly")}</strong>{" "}
+              {notice.message || t("nav.gateway.configReadOnlyHint")}
+              <Show when={notice.docsUrl}>
+                {" "}
+                <a
+                  href={notice.docsUrl}
+                  target={EXTERNAL_LINK_TARGET}
+                  rel={buildExternalLinkRel()}
+                  data-link-reader-external
+                >
+                  {t("common.learnMore")}
+                </a>
+              </Show>
+            </p>
+          )}
         </Show>
         <main
           id="control-ui-main"

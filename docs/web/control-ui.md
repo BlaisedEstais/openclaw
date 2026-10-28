@@ -34,12 +34,16 @@ visibility, or remote session-link titles. Side Chat is hidden, and session link
 keep their locally available labels. MCP Apps discovery requires general write
 access. The Gateway continues to authorize every request.
 
-## Managed mode
+When the Gateway starts with `OPENCLAW_CONFIG_READONLY=1` or `OPENCLAW_NIX_MODE=1`,
+its Control UI shows **Gateway configuration is read-only.** You can inspect the
+configuration there. OpenClaw refuses changes to `openclaw.json` through the Gateway.
 
-A deployment can set `OPENCLAW_CONTROL_UI_MANAGED_MODE_NOTICE` on the Gateway
-process to show a **Managed mode** banner. Set the text to tell operators where
-to change settings and which actions the deployment restricts. The Control UI
-displays the text as supplied. The deployment enables each restriction separately.
+By default, the banner tells operators to update the configuration file or
+deployment settings for this Gateway. To direct them to your own workflow, set
+`OPENCLAW_CONFIG_READONLY_NOTICE` in the Gateway's startup environment. Its plain
+text replaces the instructions after the read-only heading. End the notice with
+a space and an absolute HTTP or HTTPS URL to add a **Learn more** link. For
+example, `Edit the deployment manifest and redeploy. https://example.org/gateway`.
 
 ## Command palette file attachments
 
