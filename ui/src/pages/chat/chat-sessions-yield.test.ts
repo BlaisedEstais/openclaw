@@ -179,6 +179,7 @@ describe("sessions_yield transcript projection", () => {
     expect(pendingSessionsYield(messages)).toEqual(pendingHandoff);
     expect(items).toContainEqual(silentBoundary);
     expect(groupTexts(items)).toEqual([expect.stringContaining(JSON.stringify(acknowledgment))]);
+    expect(JSON.stringify(items)).not.toContain("The session will resume");
   });
 
   it.each([

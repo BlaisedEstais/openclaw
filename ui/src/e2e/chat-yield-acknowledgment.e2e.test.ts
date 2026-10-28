@@ -40,7 +40,7 @@ const runId = "parent-run";
 type ChildFacts = Partial<
   Pick<
     GatewaySessionRow,
-    "status" | "hasActiveRun" | "activeRunIds" | "endedAt" | "runtimeMs" | "agentStatus"
+    "status" | "hasActiveRun" | "activeRunIds" | "endedAt" | "agentStatus" | "subagentRunState"
   >
 >;
 
@@ -79,12 +79,7 @@ function scenarioData(scenario: Scenario, now: number) {
   const children = [
     child(1, FIRST, resumed ? { ...done, endedAt: now - 2_000 } : running, now),
     child(2, SECOND, { ...done, endedAt: now - 200_000, ...(!resumed && needsInput) }, now),
-    child(
-      3,
-      THIRD,
-      { ...done, endedAt: now - 350_000, ...(!resumed && { runtimeMs: 240_000 }) },
-      now,
-    ),
+    child(3, THIRD, { ...done, endedAt: now - 350_000, subagentRunState: "paused" }, now),
   ].slice(0, scenario === "one-waiting" ? 1 : 3);
   const acknowledgment = scenario === "one-waiting" ? SHORT_ACK : LONG_ACK;
   const parent = {
@@ -241,20 +236,20 @@ suite.define(() => {
       const toggle = wait.locator("button[aria-expanded]");
       await expect
         .poll(async () => squash(await toggle.textContent()))
-        .toBe("Waiting on 3 sessions · 1 needs your input · 10m");
+        .toBe("Waiting on 3 sessions · 1 needs your input · 1 paused · 10m");
       expect(await toggle.getAttribute("aria-expanded")).toBe("true");
       const rows = wait.locator("li");
       expect((await rows.allTextContents()).map(squash)).toEqual([
         `${SECOND} Needs your input`,
+        `${THIRD} Paused`,
         `${FIRST} Running`,
-        `${THIRD} Done`,
       ]);
       expect(
         await rows.locator("a").evaluateAll((links) => links.map((a) => a.getAttribute("href"))),
       ).toEqual([
         "/chat/main/subagent/dependency-update-2",
-        "/chat/main/subagent/dependency-update-1",
         "/chat/main/subagent/dependency-update-3",
+        "/chat/main/subagent/dependency-update-1",
       ]);
       await toggle.click();
       expect(await toggle.getAttribute("aria-expanded")).toBe("false");
@@ -280,19 +275,19 @@ suite.define(() => {
         .locator(".chat-group.assistant .chat-text p")
         .filter({ hasText: "Something to know before landing" })
         .waitFor();
-      expect(squash(await toggle.textContent())).toBe("Resumed · 9m 32s later · 3 sessions");
-      // oxlint-disable-next-line unicorn/prefer-dom-node-text-content -- Verify CSS-transformed text, not source copy.
+      // oxlint-disable-next-line unicorn/prefer-dom-node-text-content -- Verify rendered label and duration casing.
       expect(squash(await toggle.innerText())).toBe("Resumed · 9m 32s Later · 3 Sessions");
-      expect(await toggle.evaluate((element) => getComputedStyle(element).textTransform)).toBe(
-        "capitalize",
-      );
       expect(await toggle.getAttribute("aria-expanded")).toBe("true");
       expect((await rule.locator("li").allTextContents()).map(squash)).toEqual([
+        `${THIRD} Paused`,
         `${FIRST} Done`,
         `${SECOND} Done`,
-        `${THIRD} Done`,
       ]);
-      expect(await thread.locator(".chat-group.assistant").count()).toBe(1);
+      // Only a paused child is left: a quiet note below the answer, not a waiting line.
+      const note = thread.locator(".chat-group.assistant .chat-subagent-wait");
+      expect(squash(await note.textContent())).toBe(`${THIRD} is paused`);
+      expect(await note.locator("a").getAttribute("href")).toMatch(/dependency-update-3$/);
+      expect(await thread.textContent()).not.toContain("Waiting on");
       expect(await thread.locator(".chat-notice").count()).toBe(0);
       expect(await thread.textContent()).not.toContain(PRIVATE);
       // A listed child opens its own session in place.
@@ -303,6 +298,12 @@ suite.define(() => {
       await expect
         .poll(() => pane.locator(".chat-pane__session-title-text").first().textContent())
         .toBe(SECOND);
+    });
+    await suite.withPage({ locale: "nl" }, async ({ page }) => {
+      const { thread } = await openScenario(page, "resumed");
+      const rule = thread.locator(".chat-handoff-resume__rule");
+      // oxlint-disable-next-line unicorn/prefer-dom-node-text-content -- Verify rendered duration casing.
+      expect(await rule.innerText()).toContain("9 m 32 s");
     });
   });
 });
