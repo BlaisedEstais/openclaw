@@ -155,25 +155,25 @@ it("shows the read-only banner only for the serving Gateway while its configurat
   const { runtime, query, refresh, route } = await mountShell();
   const { config, gateway } = runtime.context;
   const fetch = vi.spyOn(globalThis, "fetch");
-  fetch.mockResolvedValueOnce(Response.json({ configReadOnly: true }));
-  await config.refresh();
-  refresh();
-  const banner = query(".shell-config-read-only");
+  const loadConfig = async (configReadOnly: boolean, configReadOnlyNotice?: string) => {
+    fetch.mockResolvedValueOnce(Response.json({ configReadOnly, configReadOnlyNotice }));
+    await config.refresh();
+    refresh();
+  };
+  const getBanner = () => query(".shell-config-read-only");
+  await loadConfig(true);
+  const banner = getBanner();
   expect(banner?.textContent?.trim()).toBe(
     "Gateway configuration is read-only. To make changes, update the configuration file or deployment settings for this Gateway.",
   );
   expect(banner?.querySelector("a")).toBeNull();
   route("settings");
-  expect(query(".shell-config-read-only")).toBe(banner);
+  expect(getBanner()).toBe(banner);
 
   const docsUrl = "https://docs.example.org/gateway";
   const notice = `Use the <admin> console. ${docsUrl}`;
-  fetch.mockResolvedValueOnce(
-    Response.json({ configReadOnly: true, configReadOnlyNotice: notice }),
-  );
-  await config.refresh();
-  refresh();
-  const custom = query(".shell-config-read-only");
+  await loadConfig(true, notice);
+  const custom = getBanner();
   expect(custom?.textContent?.trim()).toBe(
     "Gateway configuration is read-only. Use the <admin> console. Learn more",
   );
@@ -183,17 +183,13 @@ it("shows the read-only banner only for the serving Gateway while its configurat
   const connection = vi.spyOn(gateway, "connection", "get");
   connection.mockReturnValue({ ...serving, gatewayUrl: serving.gatewayUrl + "/another-gateway" });
   refresh();
-  expect(query(".shell-config-read-only")).toBeNull();
+  expect(getBanner()).toBeNull();
   connection.mockRestore();
   refresh();
-  expect(query(".shell-config-read-only")).not.toBeNull();
+  expect(getBanner()).not.toBeNull();
 
-  fetch.mockResolvedValueOnce(
-    Response.json({ configReadOnly: false, configReadOnlyNotice: notice }),
-  );
-  await config.refresh();
-  refresh();
-  expect(query(".shell-config-read-only")).toBeNull();
+  await loadConfig(false, notice);
+  expect(getBanner()).toBeNull();
 });
 
 it("exposes the Templates navigation entry only while its Labs toggle is enabled", async () => {

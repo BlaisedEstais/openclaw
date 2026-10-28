@@ -2,36 +2,21 @@ import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { resolveControlUiBootstrapPresentation } from "./control-ui-bootstrap-presentation.js";
 
 it.each([
-  {
-    readOnly: "1",
-    nixMode: undefined,
-    notice: "  Edit in Console. ",
-    expected: true,
-    guidance: "Edit in Console.",
-  },
-  { readOnly: undefined, nixMode: "1", notice: " ", expected: true, guidance: undefined },
-  {
-    readOnly: undefined,
-    nixMode: undefined,
-    notice: "Edit in Console.",
-    expected: false,
-    guidance: undefined,
-  },
-])(
-  "reports the config write policy (read-only: $readOnly, Nix: $nixMode)",
-  ({ readOnly, nixMode, notice, expected, guidance }) => {
-    vi.stubEnv("OPENCLAW_CONFIG_READONLY", readOnly);
-    vi.stubEnv("OPENCLAW_NIX_MODE", nixMode);
-    vi.stubEnv("OPENCLAW_CONFIG_READONLY_NOTICE", notice);
-    onTestFinished(() => {
-      vi.unstubAllEnvs();
-    });
-    expect(resolveControlUiBootstrapPresentation(undefined)).toMatchObject({
-      configReadOnly: expected,
-      configReadOnlyNotice: guidance,
-    });
-  },
-);
+  { readOnly: "1", notice: "  Edit in Console. ", enabled: true, guidance: "Edit in Console." },
+  { nixMode: "1", notice: " ", enabled: true, guidance: undefined },
+  { notice: "Edit in Console.", enabled: false, guidance: undefined },
+])("reports the config write policy for %j", ({ readOnly, nixMode, notice, enabled, guidance }) => {
+  vi.stubEnv("OPENCLAW_CONFIG_READONLY", readOnly);
+  vi.stubEnv("OPENCLAW_NIX_MODE", nixMode);
+  vi.stubEnv("OPENCLAW_CONFIG_READONLY_NOTICE", notice);
+  onTestFinished(() => {
+    vi.unstubAllEnvs();
+  });
+  expect(resolveControlUiBootstrapPresentation(undefined)).toMatchObject({
+    configReadOnly: enabled,
+    configReadOnlyNotice: guidance,
+  });
+});
 
 describe("Control UI model defaults bootstrap", () => {
   it.each([undefined, "configured"] as const)(

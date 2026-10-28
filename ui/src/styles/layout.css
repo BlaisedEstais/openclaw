@@ -118,13 +118,7 @@
 
 .shell-config-read-only {
   grid-area: notice;
-  min-width: 0;
   margin: 0 var(--shell-dock-reserve-right) 0 0;
-  padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--info) 10%, var(--bg));
-  color: var(--text-strong);
-  font-size: var(--control-ui-text-sm);
   text-align: center;
   overflow-wrap: anywhere;
 }

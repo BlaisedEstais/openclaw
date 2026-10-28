@@ -346,7 +346,7 @@ export function ApplicationShell(props: {
         <Show when={view().runtime.readOnlyConfig} keyed>
           {(notice) => (
             <p
-              class="shell-config-read-only"
+              class="shell-config-read-only callout info"
               inert={view().mobileNavLayout && view().navDrawerOpen}
             >
               <strong>{t("nav.gateway.configReadOnly")}</strong>{" "}
