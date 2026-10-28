@@ -16,7 +16,7 @@ const files = {
   "guides/faculty-guide.md":
     "# Faculty Guide\n\n[Development records](multiplayer-agentic-workflows.md#additional-human-agent-development-records)\n",
   "guides/multiplayer-agentic-workflows.md":
-    "# Multiplayer agentic workflows\n\n[Local records](#additional-human-agent-development-records)\n\n[Level five](#level-five)\n\n[Level six](#level-six)\n\n" +
+    "# Multiplayer agentic workflows\n\n[Local records](#additional-human-agent-development-records)\n\n[Level five](#level-five)\n\n[Level six](#level-six)\n\n[Updated records](#updated-records)\n\n" +
     "Background notes.\n\n".repeat(70) +
     "## " +
     section +
@@ -67,7 +67,7 @@ suite.define(() => {
           },
         },
       });
-      await page.goto(suite.server.baseUrl + "chat");
+      await page.goto(suite.server.baseUrl + "chat/main");
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
       await page.getByRole("button", { name: "Faculty Guide", exact: true }).click();
       const reader = page.locator(".sidebar-file-view__markdown:visible");
@@ -133,11 +133,60 @@ suite.define(() => {
           )
           .toBe(true);
       }
+      const retainedReader = await reader.elementHandle();
+      const refreshedPath = "guides/multiplayer-agentic-workflows.md";
+      await gateway.deferNext("sessions.files.get", { path: "/workspace/" + refreshedPath });
+      await reader.getByRole("button", { name: "Updated records", exact: true }).click();
+      await gateway.waitForRequest("sessions.files.get", { after: 5 });
+      const refreshedHeading = reader.getByRole("heading", {
+        name: "Updated records",
+        exact: true,
+      });
+      expect(await refreshedHeading.count()).toBe(0);
+      // Keep the old document rendered across frames before the response adds the target.
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          }),
+      );
+      expect(await retainedReader?.evaluate((element) => element.isConnected)).toBe(true);
+      await gateway.resolveDeferred(
+        "sessions.files.get",
+        fileResponse(
+          refreshedPath,
+          files[refreshedPath] +
+            "New background notes.\n\n".repeat(80) +
+            "## Updated records\n\nNew records are here.\n\n" +
+            "More notes.\n\n".repeat(30),
+        ),
+      );
+      await refreshedHeading.waitFor();
+      expect(
+        await reader.evaluate((element, retained) => element === retained, retainedReader),
+      ).toBe(true);
+      await expect
+        .poll(
+          () =>
+            refreshedHeading.evaluate((element) => {
+              const bounds = element.getBoundingClientRect();
+              const viewport = element
+                .closest(".sidebar-file-view__markdown-scroll")!
+                .getBoundingClientRect();
+              return (
+                Math.round(bounds.top) >= Math.round(viewport.top) &&
+                Math.round(bounds.bottom) <= Math.round(viewport.bottom)
+              );
+            }),
+          { message: "The refreshed document must fulfill its pending heading navigation" },
+        )
+        .toBe(true);
       expect(page.url()).toBe(chatUrl);
       expect(
         (await gateway.getRequests("sessions.files.get")).map((request) => request.params),
       ).toMatchObject([
         { path: "guides/faculty-guide.md" },
+        { path: "/workspace/guides/multiplayer-agentic-workflows.md" },
         { path: "/workspace/guides/multiplayer-agentic-workflows.md" },
         { path: "/workspace/guides/multiplayer-agentic-workflows.md" },
         { path: "/workspace/guides/multiplayer-agentic-workflows.md" },
