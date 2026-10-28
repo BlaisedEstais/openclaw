@@ -342,6 +342,16 @@ export function ApplicationShell(props: {
             }
           />
         </Show>
+        <Show when={view().runtime.managedModeNotice}>
+          <details
+            class="shell-managed-mode"
+            open={!view().mobileNavLayout}
+            inert={view().mobileNavLayout && view().navDrawerOpen}
+          >
+            <summary>{t("nav.gateway.managedMode")}</summary>
+            <p>{view().runtime.managedModeNotice}</p>
+          </details>
+        </Show>
         <main
           id="control-ui-main"
           class={[

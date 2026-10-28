@@ -151,6 +151,35 @@ it("publishes readiness when the retained sidebar's delayed module commits", asy
   }
 });
 
+it("shows the deployment's managed-mode notice across routes and clears it when omitted", async () => {
+  const { runtime, query, refresh, route } = await mountShell();
+  const { config, gateway } = runtime.context;
+  const notice = "Change <config> in the deployment console.";
+  const fetch = vi.spyOn(globalThis, "fetch");
+  fetch.mockResolvedValueOnce(Response.json({ managedModeNotice: notice }));
+  await config.refresh();
+  refresh();
+  const banner = query("details.shell-managed-mode");
+  expect(banner?.querySelector("summary")?.textContent).toBe("Managed mode");
+  expect(banner?.querySelector("p")?.textContent).toBe(notice);
+  route("settings");
+  expect(query("details.shell-managed-mode")).toBe(banner);
+
+  const serving = gateway.connection;
+  const connection = vi.spyOn(gateway, "connection", "get");
+  connection.mockReturnValue({ ...serving, gatewayUrl: serving.gatewayUrl + "/another-gateway" });
+  refresh();
+  expect(query("details.shell-managed-mode")).toBeNull();
+  connection.mockRestore();
+  refresh();
+  expect(query("details.shell-managed-mode")).not.toBeNull();
+
+  fetch.mockResolvedValueOnce(Response.json({}));
+  await config.refresh();
+  refresh();
+  expect(query("details.shell-managed-mode")).toBeNull();
+});
+
 it("exposes the Templates navigation entry only while its Labs toggle is enabled", async () => {
   const { owner, runtime } = await mountShell();
   const initial = runtime.context.runtimeConfig.state;

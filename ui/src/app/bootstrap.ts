@@ -97,6 +97,7 @@ export type ApplicationRuntime = {
   readonly context: ApplicationContext;
   readonly router: ApplicationRouter;
   readonly documentMode: ControlUiDocumentMode | null;
+  readonly managedModeNotice?: string;
   readonly warmBoot: boolean;
   readonly focusLocation: ControlUiFocusLocation | null;
   readonly pendingGatewayConnection: {
@@ -159,10 +160,10 @@ export function bootstrapApplication(
   const documentGatewayScope = gatewayCredentialScope(
     `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}${resourceBasePath}`,
   );
+  const isDocumentGateway = () =>
+    gatewayCredentialScope(gateway.connection.gatewayUrl) === documentGatewayScope;
   const stopBrowserAuthRecovery = startBrowserAuthRecovery(resourceBasePath, () =>
-    gatewayCredentialScope(gateway.connection.gatewayUrl) === documentGatewayScope
-      ? getGatewayAuth()
-      : {},
+    isDocumentGateway() ? getGatewayAuth() : {},
   );
   const connectionBootstrap = createConnectionBootstrapCoordinator();
   const chatSubmissions = createChatSubmissions();
@@ -241,9 +242,7 @@ export function bootstrapApplication(
     resourceBasePath,
     getAuth: getGatewayAuth,
   });
-  const canUseDocumentPreferences = () =>
-    gatewayCredentialScope(gateway.connection.gatewayUrl) === documentGatewayScope;
-  const documentPreferences = canUseDocumentPreferences() ? config.preferences : undefined;
+  const documentPreferences = isDocumentGateway() ? config.preferences : undefined;
   if (documentPreferences) {
     const scope = gateway.connection.gatewayUrl;
     const { profileId, entries } = documentPreferences;
@@ -269,12 +268,7 @@ export function bootstrapApplication(
     }
     firstPreferencesConnection = false;
     const { profileId, entries } = documentPreferences ?? {};
-    if (
-      canUseDocumentPreferences() &&
-      profileId === snapshot.selfUser?.id &&
-      profileId &&
-      entries
-    ) {
+    if (isDocumentGateway() && profileId === snapshot.selfUser?.id && profileId && entries) {
       seedUserPreferences(snapshot.client, profileId, PROFILE_UI_PREFERENCE_KEYS, entries);
     }
   });
@@ -340,7 +334,7 @@ export function bootstrapApplication(
   const runtimeConfig = createRuntimeConfigCapability(gateway, {
     current: () => {
       const preferences = config.preferences;
-      return canUseDocumentPreferences() &&
+      return isDocumentGateway() &&
         (gateway.snapshot.phase !== "connected" ||
           preferences?.profileId === gateway.snapshot.selfUser?.id)
         ? (preferences?.config ?? null)
@@ -582,6 +576,10 @@ export function bootstrapApplication(
     context,
     router,
     documentMode,
+    get managedModeNotice() {
+      const notice = config.current.managedModeNotice;
+      return notice && isDocumentGateway() ? notice : undefined;
+    },
     get warmBoot() {
       return warmBoot && gateway.connectionRevision === warmBootConnectionRevision;
     },

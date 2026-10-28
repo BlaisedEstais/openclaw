@@ -920,6 +920,7 @@ const startupEnglish = {
       sectionLabel: "Gateway",
       menuLabel: "Gateway: {gateway}",
       primaryTag: "primary",
+      managedMode: "Managed mode",
       setPrimary: "Set as primary…",
       openSettings: "Gateway settings",
       connected: "Connected",

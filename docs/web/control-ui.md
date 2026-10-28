@@ -34,6 +34,13 @@ visibility, or remote session-link titles. Side Chat is hidden, and session link
 keep their locally available labels. MCP Apps discovery requires general write
 access. The Gateway continues to authorize every request.
 
+## Managed mode
+
+A deployment can set `OPENCLAW_CONTROL_UI_MANAGED_MODE_NOTICE` on the Gateway
+process to show a **Managed mode** banner. Set the text to tell operators where
+to change settings and which actions the deployment restricts. The Control UI
+displays the text as supplied. The deployment enables each restriction separately.
+
 ## Command palette file attachments
 
 Open the command palette with **Cmd+K** on macOS or **Ctrl+K** elsewhere. Drop

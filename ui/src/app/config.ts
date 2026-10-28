@@ -24,6 +24,7 @@ type ApplicationConfig = {
   serverBuildId?: string | null;
   devGitBranch: string | null;
   environment: ControlUiEnvironment | null;
+  managedModeNotice?: string;
   embedSandboxMode: ControlUiEmbedSandboxMode;
   allowExternalEmbedUrls: boolean;
   automaticallyFetchFavicons: boolean;
@@ -107,6 +108,7 @@ function normalizeApplicationConfig(parsed: ControlUiBootstrapConfig): Applicati
     serverBuildId: parsed.serverBuildId ?? null,
     devGitBranch: parsed.devGitBranch?.trim() || null,
     environment: parsed.environment ?? null,
+    managedModeNotice: parsed.managedModeNotice,
     embedSandboxMode: parsed.embedSandbox ?? "scripts",
     allowExternalEmbedUrls: Boolean(parsed.allowExternalEmbedUrls),
     automaticallyFetchFavicons: Boolean(parsed.automaticallyFetchFavicons),
