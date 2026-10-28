@@ -124,12 +124,9 @@ export function ensureOpenClawStateRuntimeSchema(
           return [];
         }
         const previousVersion = readStateSchemaContentVersion(db);
-        const maintenance = getOpenClawDatabaseMaintenanceScope();
-        if (maintenance?.ownsSchemaMaintenance) {
-          // Candidate/finalize Doctor and update repair already own offline schema
-          // maintenance. Ordinary Doctor is refused at CLI preflight, before custody.
-          maintenance.assertDatabaseAccess(pathname);
-        } else {
+        // Candidate/finalize Doctor and update repair already own offline schema
+        // maintenance. Preserve the migration owner's existing access/refusal order.
+        if (!getOpenClawDatabaseMaintenanceScope()?.ownsSchemaMaintenance) {
           assertGatewayServiceSchemaMigrationAllowed(
             pathname,
             previousVersion,

@@ -1187,7 +1187,7 @@ describe("gateway run option collisions", () => {
     if (error instanceof OpenClawDatabaseSchemaPreflightError) {
       expect(gatewayErrorMessages).toEqual([`${error.message} Parked the managed LaunchAgent.`]);
       expect(gatewayErrorMessages[0]).toMatch(
-        /schema 999 was written by OpenClaw 2026\.9\.4;.*newer install's openclaw doctor --fix/s,
+        /schema 999;.*was written by OpenClaw 2026\.9\.4,.*openclaw update/s,
       );
       expect(runtimeErrors).toEqual([`Gateway failed to start: ${error.message}`]);
     } else {

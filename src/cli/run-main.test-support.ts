@@ -389,7 +389,10 @@ vi.mock("./run-main-service-installation.js", async (importOriginal) => ({
   inspectCliGatewayServiceInstallation: async () => undefined,
 }));
 
-vi.mock("./database-engine-selection.js", () => ({ prepareCliDatabaseEngine: async () => false }));
+vi.mock("./database-engine-selection.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./database-engine-selection.js")>()),
+  prepareCliDatabaseEngine: async () => false,
+}));
 
 // mock-isolation: Gateway admission must read synthetic snapshots without real config I/O.
 vi.mock("../config/io.factory.js", () => ({
