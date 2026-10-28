@@ -23,7 +23,9 @@ it.each([
     vi.stubEnv("OPENCLAW_CONFIG_READONLY", readOnly);
     vi.stubEnv("OPENCLAW_NIX_MODE", nixMode);
     vi.stubEnv("OPENCLAW_CONFIG_READONLY_NOTICE", notice);
-    onTestFinished(() => vi.unstubAllEnvs());
+    onTestFinished(() => {
+      vi.unstubAllEnvs();
+    });
     expect(resolveControlUiBootstrapPresentation(undefined)).toMatchObject({
       configReadOnly: expected,
       configReadOnlyNotice: guidance,
