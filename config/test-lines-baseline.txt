@@ -1,2 +1,2 @@
 # Preserve invited project/task summary regressions at the measured total with zero slack.
-6311490
+6312266
