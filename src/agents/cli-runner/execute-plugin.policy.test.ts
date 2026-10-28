@@ -9,11 +9,11 @@ import {
   revokeMcpLoopbackClientGrant,
   transferMcpLoopbackClientGrant,
 } from "../../gateway/mcp-grant-store.js";
+import type { CliBackendTurnAssessment } from "../../plugins/cli-backend-turn-status.types.js";
 import type {
+  CliBackendExecuteContext,
   CliBackendLiveSessionHandle,
   CliBackendToolPermissionResult,
-  CliBackendTurnAssessment,
-  CliBackendExecuteContext,
 } from "../../plugins/cli-backend.types.js";
 import {
   initializeGlobalHookRunner,
@@ -817,11 +817,9 @@ describe("plugin turn assessments through the operation watchdog", () => {
           throw new Error("private provider detail");
         }
         // Deliberately malformed plugin output exercises the real runtime validator.
-        return (
-          mode === "invalid"
-            ? { state: "closed", basis: "invented", raw: "private" }
-            : { state, basis, raw: "private" }
-        ) as CliBackendTurnAssessment;
+        return (mode === "invalid"
+          ? { state: "closed", basis: "invented", raw: "private" }
+          : { state, basis, raw: "private" }) as unknown as CliBackendTurnAssessment;
       });
       const run = runPlugin(
         context,
@@ -875,4 +873,32 @@ describe("plugin turn assessments through the operation watchdog", () => {
       }
     },
   );
+});
+
+it("permits admitted schema discovery with exec denied, without enabling execution tools", async () => {
+  const { context } = await createExecution({
+    config: { tools: { exec: { security: "deny", ask: "off" } } },
+    nativeTools: [],
+  });
+  context.params.cliToolAvailability = {
+    native: [],
+    discovery: ["ToolSearch"],
+    openClaw: ["read"],
+  };
+  const decisions: CliBackendToolPermissionResult[] = [];
+  let retained: CliBackendExecuteContext["requestToolPermission"] | undefined;
+  await runPlugin(context, async function* (execution) {
+    retained = execution.requestToolPermission;
+    for (const toolName of ["ToolSearch", "Bash", "Agent"]) {
+      decisions.push(
+        await execution.requestToolPermission({ toolName, toolInput: { query: "read" } }),
+      );
+    }
+    yield SUCCESS_RESULT;
+  });
+  expect(decisions.map((decision) => decision.behavior)).toEqual(["allow", "deny", "deny"]);
+  expect(await retained?.({ toolName: "ToolSearch", toolInput: { query: "read" } })).toMatchObject({
+    behavior: "deny",
+  });
+  expect(mockCallGatewayTool).not.toHaveBeenCalled();
 });

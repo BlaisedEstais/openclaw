@@ -9,19 +9,19 @@ import {
   resolveWindowsExecutablePath,
   resolveWindowsSpawnProgramCandidate,
 } from "../../plugin-sdk/windows-spawn.js";
+import type { CliBackendTurnStatus } from "../../plugins/cli-backend-turn-status.types.js";
 import type {
   CliBackendExecute,
   CliBackendMessageInjection,
   CliBackendToolPermissionRequest,
   CliBackendToolPermissionResult,
   CliBackendTurnInterrupt,
-  CliBackendTurnStatus,
   CliBackendUserInputRequest,
   CliBackendUserInputResult,
 } from "../../plugins/cli-backend.types.js";
 import type { RunExit, TerminationReason } from "../../process/supervisor/types.js";
 import { isHostGeneratedInputProvenance } from "../../sessions/input-provenance.js";
-import type { ReplyBackendTurnStatus } from "../../sessions/session-controller.backend-contracts.js";
+import type { ReplyBackendTurnStatus } from "../../sessions/session-controller.turn-status.types.js";
 import { assertionSucceeds } from "../../shared/assertion.js";
 import { runWithAgentToolSourceExecutionScope } from "../agent-tool-source-execution-guard.js";
 import {
@@ -91,7 +91,12 @@ async function createPluginToolPermissionHandler(params: {
     if (!toolName) {
       return denyTool("OpenClaw denied an unnamed native tool.");
     }
-    if (run.cliToolAvailability && !run.cliToolAvailability.native.includes(toolName)) {
+    const discoveryOnly = run.cliToolAvailability?.discovery?.includes(toolName) === true;
+    if (
+      run.cliToolAvailability &&
+      !run.cliToolAvailability.native.includes(toolName) &&
+      !discoveryOnly
+    ) {
       return denyTool(`OpenClaw denied native tool ${toolName}: it is unavailable to this run.`);
     }
 
@@ -211,6 +216,13 @@ async function createPluginToolPermissionHandler(params: {
           }
         }
       }
+    }
+
+    // Schema discovery has no file, shell, or remote execution authority. Tool calls
+    // discovered this way still return through the MCP grant and normal tool policy.
+    if (discoveryOnly) {
+      assertActive();
+      return { behavior: "allow", updatedInput: toolInput };
     }
 
     const plan = resolveCliNativeToolApprovalPlan(permission);

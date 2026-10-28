@@ -1,21 +1,22 @@
 import type {
-  ReplyBackendHandle,
   ReplyBackendTurnAssessment,
   ReplyBackendTurnStatus,
-} from "./session-controller.backend-contracts.js";
-import type { SessionControllerWatchdogAttempt } from "./session-controller.watchdog.js";
+} from "./session-controller.turn-status.types.js";
 
 const ASSESSMENT_MS = 10_000;
+// Identity-compared views; the watchdog passes its attempt and attached backend handle.
+type AssessedAttempt = { isCurrent(): boolean };
+export type WatchdogAssessmentBackend = { readonly turnStatus?: ReplyBackendTurnStatus };
 type Owner = {
   current: boolean;
-  attempt?: SessionControllerWatchdogAttempt;
-  backend?: ReplyBackendHandle;
+  attempt?: AssessedAttempt;
+  backend?: WatchdogAssessmentBackend;
   sequence: number;
 };
 type Assessment = {
-  backend: ReplyBackendHandle;
+  backend: WatchdogAssessmentBackend;
   status: ReplyBackendTurnStatus;
-  attempt: SessionControllerWatchdogAttempt;
+  attempt: AssessedAttempt;
   sequence: number;
   startedAtMs: number;
   deadlineAtMs: number;

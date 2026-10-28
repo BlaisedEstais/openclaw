@@ -232,8 +232,6 @@ export const gatewayDatabaseWorkerTestFiles = [
   "src/gateway/server-worker-placement-session-target.test.ts",
   "src/gateway/server-worker-placement-session-target.worktree.test.ts",
   "src/gateway/server-worker-placement-startup-maintenance.test.ts",
-  // The supervised Gateway fixture also owns native state/port-claim lifecycle.
-  "src/gateway/server.corporate-sandbox-effects.product.test.ts",
   "src/gateway/server.sessions.create-worktree-spawn.test.ts",
   "src/gateway/server.sessions.create.projects.test.ts",
   "src/gateway/server/skill-library-read.test.ts",
@@ -611,6 +609,7 @@ export const gatewayMethodsTestExclude = [
 export const gatewayServerIsolatedTestFiles = [
   // Real provider and subagent lifecycle registrations must survive the whole scenario.
   "src/gateway/gateway.prompt-cache.test.ts",
+  "src/gateway/server.recovery-notice-history.test.ts",
   // Native provider imports must not retain a previous file's retired shared-state owner.
   "src/gateway/setup-inference.first-signin.integration.test.ts",
   // Sibling threads can fork and retain listener sockets until exec on Linux.

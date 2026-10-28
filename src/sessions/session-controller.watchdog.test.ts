@@ -8,13 +8,13 @@ import {
 } from "../infra/diagnostic-events.js";
 import { createDeferredCore } from "../shared/deferred.js";
 import { withSessionTurn } from "./session-controller.admission.js";
-import type {
-  ReplyBackendTurnAssessment,
-  ReplyBackendTurnStatus,
-} from "./session-controller.backend-contracts.js";
 import { createReplyOperation } from "./session-controller.operation.js";
 import { getSessionControllerOperation } from "./session-controller.state.js";
 import { testing } from "./session-controller.test-support.js";
+import type {
+  ReplyBackendTurnAssessment,
+  ReplyBackendTurnStatus,
+} from "./session-controller.turn-status.types.js";
 import {
   SESSION_WATCHDOG_CLEANUP_MS,
   SESSION_WATCHDOG_QUIET_TOOL_MS,

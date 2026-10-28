@@ -1,7 +1,9 @@
 import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
 import { createAbortError } from "../infra/abort-signal.js";
-import type { ReplyBackendHandle } from "./session-controller.backend-contracts.js";
-import { createWatchdogAssessment } from "./session-controller.watchdog-assessment.js";
+import {
+  createWatchdogAssessment,
+  type WatchdogAssessmentBackend,
+} from "./session-controller.watchdog-assessment.js";
 import {
   decideSessionWatchdog,
   SESSION_WATCHDOG_ABORT_FLOOR_MS,
@@ -104,7 +106,7 @@ export function createSessionControllerWatchdog(params: {
   startedAtMs: number;
   isCurrent: () => boolean;
   readPhase: () => SessionWatchdogPhase;
-  readBackend?: () => ReplyBackendHandle | undefined;
+  readBackend?: () => WatchdogAssessmentBackend | undefined;
   requestStop: (
     effect: SessionWatchdogEffect,
   ) => SessionWatchdogEffectResult | Promise<SessionWatchdogEffectResult>;

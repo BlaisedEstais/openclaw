@@ -2,6 +2,7 @@ import type { ModelThinkingLevel } from "@openclaw/llm-core/types";
 import type { NormalizedUsage } from "../agents/usage.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { ContextEngineHostCapability } from "../context-engine/types.js";
+import type { CliBackendTurnStatus } from "./cli-backend-turn-status.types.js";
 
 type CliBackendNoOutputWatchdog = {
   /** Fraction of overall timeout used when fixed timeout is not set. */
@@ -129,6 +130,8 @@ export type CliBackendExecutionMode = "agent" | "side-question";
 /** Exact backend-native plus canonical OpenClaw tool surface for one CLI run. */
 export type CliBackendToolAvailability = {
   native: readonly string[];
+  /** Read-only native discovery of the already-authorized catalog; grants no execution authority. */
+  discovery?: readonly string[];
   /** Canonical OpenClaw tool names served through the host-isolated transport. */
   openClaw: readonly string[];
 };
@@ -222,24 +225,6 @@ export type CliBackendMessageInjection = {
 export type CliBackendTurnInterrupt = {
   /** Request the turn end; its execution stream must then finish normally. */
   interrupt(reason: "yield"): Promise<void>;
-};
-
-/** Content-free facts, never proof of model progress or authority to stop a turn. */
-export type CliBackendTurnAssessment =
-  | { state: "closed"; basis: "process_exited" | "transport_closed" }
-  | {
-      state: "unknown";
-      basis: "process_present" | "status_unsupported" | "busy" | "transient_error";
-    };
-
-/** Capture the exact native input/generation without submitting work or changing hooks. */
-export type CliBackendTurnStatus = {
-  capture():
-    | {
-        isCurrent(): boolean;
-        assess(params: { signal: AbortSignal }): Promise<CliBackendTurnAssessment>;
-      }
-    | undefined;
 };
 
 /** Turn-only context that must not become an operator-authored native transcript row. */
@@ -557,6 +542,8 @@ type CliBackendPluginBase = {
    * Core rejects other names before grant/capture and excludes node/tool-disabled runs.
    */
   projectNativeToolAuthority?: (nativeTools: readonly string[]) => readonly string[];
+  /** Native tool that only discovers schemas from the authorized MCP catalog. */
+  nativeToolSearch?: string;
   /**
    * Operator-selected native tools kept on OpenClaw-mediated agent turns, which
    * otherwise expose no native tools. Core applies the same list to ordinary and

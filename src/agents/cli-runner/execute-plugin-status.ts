@@ -1,9 +1,9 @@
 import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { CliBackendTurnStatus } from "../../plugins/cli-backend.types.js";
+import type { CliBackendTurnStatus } from "../../plugins/cli-backend-turn-status.types.js";
 import type {
   ReplyBackendTurnAssessment,
   ReplyBackendTurnStatus,
-} from "../../sessions/session-controller.backend-contracts.js";
+} from "../../sessions/session-controller.turn-status.types.js";
 
 function readTurnAssessment(value: unknown): ReplyBackendTurnAssessment {
   if (isRecord(value)) {

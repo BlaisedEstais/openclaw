@@ -1,11 +1,29 @@
-import type { CliBackendTurnStatus } from "openclaw/plugin-sdk/cli-backend";
-import type { ClaudeCliExecuteContext, ClaudeCliSession, ClaudeCliTurn } from "./cli.runtime.js";
+import type {
+  CliBackendExecuteContext,
+  CliBackendTurnStatus,
+} from "openclaw/plugin-sdk/cli-backend";
+
+// Structural views keep this adapter a leaf of cli.runtime.ts.
+type StatusContext = Pick<CliBackendExecuteContext, "abortSignal" | "assertCurrent">;
+type StatusTurn = {
+  promptInputUuid: string;
+  submittedInputUuids: ReadonlySet<string>;
+  inputStarted: boolean;
+  interrupted: boolean;
+  error?: Error;
+};
+type StatusSession = {
+  handle: { generation: string };
+  currentTurn?: object;
+  closed: boolean;
+  hasInputLifecycle: boolean;
+};
 
 /** Local facts only: this adapter never writes to the native transport. */
 export function createClaudeTurnStatus(
-  context: ClaudeCliExecuteContext,
-  session: ClaudeCliSession,
-  turn: ClaudeCliTurn,
+  context: StatusContext,
+  session: StatusSession,
+  turn: StatusTurn,
 ): CliBackendTurnStatus {
   return {
     capture() {

@@ -17,9 +17,9 @@ import type { GatewayUiCommandTarget } from "../gateway/ui-command-target.types.
 import type { ImageContent } from "../llm/types.js";
 import type { MediaFact } from "../media/media-facts.js";
 import type { PromptImageOrderEntry } from "../media/prompt-image-order.js";
-import type { CliBackendTurnAssessment } from "../plugins/cli-backend.types.js";
 import type { RuntimePluginToolGrant } from "../plugins/runtime/tool-grant.js";
 import type { InputProvenance } from "./input-provenance.js";
+import type { ReplyBackendTurnStatus } from "./session-controller.turn-status.types.js";
 import type { UserTurnTranscriptRecorder } from "./user-turn-transcript.types.js";
 
 export type ReplyBackendCancelReason = "user_abort" | "restart" | "superseded";
@@ -248,19 +248,6 @@ export type ReplyBackendMessageInjectionV2 = {
     preparation: ReplyToolAuthorityPreparation,
     authorityKind: "run" | "source-bound",
   ): Promise<boolean>;
-};
-
-export type ReplyBackendTurnAssessment =
-  | CliBackendTurnAssessment
-  | { state: "unknown"; basis: "timeout" | "failed" | "invalid" };
-
-export type ReplyBackendTurnStatus = {
-  capture():
-    | {
-        isCurrent(): boolean;
-        assess(params: { signal: AbortSignal }): Promise<ReplyBackendTurnAssessment>;
-      }
-    | undefined;
 };
 
 export type ReplyBackendHandle = {

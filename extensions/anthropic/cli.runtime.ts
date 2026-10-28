@@ -28,7 +28,7 @@ const IDLE_TIMEOUT_MS = 10 * 60 * 1_000;
 export type ClaudeCliExecuteContext = CliBackendExecuteContext & {
   assertPrivateInputCurrent?: () => void;
 };
-export type ClaudeCliTurn = {
+type ClaudeCliTurn = {
   context: ClaudeCliExecuteContext;
   controller: AbortController;
   userInput: ReturnType<typeof createClaudeCliUserInputAuthorizer>;
@@ -63,7 +63,7 @@ export type ClaudeCliTurn = {
   heldResult?: Record<string, unknown>;
   error?: Error;
 };
-export type ClaudeCliSession = {
+type ClaudeCliSession = {
   handle: CliBackendLiveSessionHandle;
   capability?: CliBackendLiveSessionCapability;
   transport?: Awaited<ReturnType<typeof createClaudeCliTransport>>;
