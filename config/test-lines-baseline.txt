@@ -1,4 +1,4 @@
 # Preserve required pre-mutation and SQLite backup regression coverage.
-# Frozen f22f675d has 6,310,802 test lines; this candidate adds exactly 167.
-# Admit the measured 6,310,969 total without extra future allowance.
-6310969
+# CI base 0661e52a has 6,310,907 test lines; this candidate adds exactly 167.
+# Admit the inspected merge total of 6,311,074 without extra future allowance.
+6311074
