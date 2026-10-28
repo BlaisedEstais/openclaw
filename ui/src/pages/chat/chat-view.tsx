@@ -15,14 +15,15 @@ import { ApplicationProvider, useOptionalApplication } from "../../lib/reactive/
 import { connectedElementRef, elementRef } from "../../lib/reactive/element-ref.ts";
 import { t, registerEnglishCatalog } from "../../lib/reactive/i18n.ts";
 import { projectPresentation } from "../../lib/reactive/presentation.ts";
+import { projectOwner } from "../../lib/reactive/projection.ts";
 import { orderSessionPullRequests } from "../../lib/session-pull-request-presentation.ts";
 import { scopedSessionArtifactKey } from "../../lib/sessions/session-key.ts";
 import { PluginSurface } from "../../plugins/control-ui-view.solid.tsx";
 import { getChatHistoryLoadState } from "./chat-history-state.ts";
-import { listDismissablePendingInputs, loadChatPendingInputs } from "./chat-pending-inputs.ts";
+import { listDismissablePendingInputIds, loadChatPendingInputs } from "./chat-pending-inputs.ts";
 import { hasTerminalRunStatus, isChatRunWorking } from "./chat-run-working.ts";
 import { forwardChatWheelToTranscript } from "./chat-scroll-input.ts";
-import { listSubagents } from "./chat-subagent-wait.ts";
+import { listSubagents, projectProgressCardRuntime } from "./chat-subagent-wait.ts";
 import { createChatViewFrame, type ChatProps, type ChatViewFrame } from "./chat-view-frame.ts";
 import {
   renderChatComposerNotices as ChatComposerNoticesView,
@@ -80,29 +81,34 @@ type ChatViewInput = {
   getScrollToLatestElement: () => HTMLButtonElement | null;
 };
 
+// Must match the fixed height of .chat-pending-inputs--history.
+const SAVED_INPUT_HISTORY_HEIGHT_PX = 44;
+
 function ChatTranscript(input: ChatViewInput) {
+  const savedInputNavigation = <ChatSavedInputNavigation {...input} />;
+  const hasSavedInputNavigation = () =>
+    input.frame.pendingInputs &&
+    (input.frame.pendingInputs.page.nextBefore !== undefined ||
+      input.frame.pendingInputs.before !== undefined);
   return (
     <ChatThread
       props={input.frame.threadProps}
       transcript={input.props.transcript}
       bindViewport={input.bindTranscriptViewport}
+      historySupplement={
+        hasSavedInputNavigation()
+          ? {
+              content: savedInputNavigation,
+              height: SAVED_INPUT_HISTORY_HEIGHT_PX,
+            }
+          : undefined
+      }
     />
   );
 }
 
-function ChatFooterContent(
-  input: ChatViewInput & {
-    mobileComposition?: boolean;
-    activities?: ChatActivityPillsProps;
-  },
-) {
+function ChatSavedInputNavigation(input: ChatViewInput) {
   const pendingInputs = () => input.frame.pendingInputs;
-  const dismissableInputIds = () => {
-    const view = pendingInputs();
-    return input.frame.dismissPendingInputs && view
-      ? listDismissablePendingInputs(view).map((pending) => pending.id)
-      : [];
-  };
   const pendingButton = (page: "earlier" | "latest") => (
     <button
       class="btn btn--sm"
@@ -121,24 +127,39 @@ function ChatFooterContent(
     </button>
   );
   return (
+    <div class="chat-pending-inputs chat-pending-inputs--history">
+      <Show when={pendingInputs()?.page.nextBefore !== undefined}>{pendingButton("earlier")}</Show>
+      <Show when={pendingInputs()?.before !== undefined}>{pendingButton("latest")}</Show>
+    </div>
+  );
+}
+
+function ChatFooterContent(
+  input: ChatViewInput & {
+    mobileComposition?: boolean;
+    activities?: ChatActivityPillsProps;
+  },
+) {
+  const search = createMemo(() =>
+    projectOwner(
+      getTranscriptState(input.props.paneId).search,
+      (owner) => owner.snapshot,
+      Object.is,
+    ),
+  );
+  const dismissableInputIds = createMemo(() => {
+    const view = input.frame.pendingInputs;
+    return input.frame.dismissPendingInputs && view
+      ? listDismissablePendingInputIds(view, input.frame.threadProps.messages, search().read())
+      : [];
+  });
+  return (
     <>
-      <Show
-        when={
-          pendingInputs() &&
-          (pendingInputs()?.error ||
-            pendingInputs()?.page.nextBefore !== undefined ||
-            pendingInputs()?.before !== undefined ||
-            dismissableInputIds().length)
-        }
-      >
+      <Show when={input.frame.pendingInputs?.error || dismissableInputIds().length}>
         <div class="chat-pending-inputs" role="status">
-          <Show when={pendingInputs()?.error}>
-            <span>{pendingInputs()?.error}</span>
+          <Show when={input.frame.pendingInputs?.error}>
+            <span>{input.frame.pendingInputs?.error}</span>
           </Show>
-          <Show when={pendingInputs()?.page.nextBefore !== undefined}>
-            {pendingButton("earlier")}
-          </Show>
-          <Show when={pendingInputs()?.before !== undefined}>{pendingButton("latest")}</Show>
           <Show when={dismissableInputIds().length}>
             <button
               class="btn btn--sm"
@@ -250,6 +271,12 @@ function ChatComposerView(input: ChatViewInput) {
               startedAt: input.props.selectedSession?.startedAt,
               endedAt: input.props.selectedSession?.endedAt,
               hasActiveRun: isChatRunWorking(input.props),
+              runtime: projectProgressCardRuntime(
+                input.props.selectedSession,
+                input.props,
+                card.updatedAt,
+                input.props.connected,
+              ),
               refresh: input.props.progressCardRefresh?.state,
               onOpen: destinations.onOpenProgress,
             }
@@ -367,8 +394,9 @@ function ChatComposerCompanion(input: ChatViewInput) {
 /** Plugin mountDefault creates a separate root; restore application and conversation context here. */
 function ChatSurfaceContent(input: { view: Component<ChatViewInput>; viewProps: ChatViewInput }) {
   const View = dynamic(() => input.view);
+  const mobile = createMemo(() => input.viewProps.props.mobileComposer === true);
   return (
-    <ChatConversationMobile value={() => input.viewProps.props.mobileComposer === true}>
+    <ChatConversationMobile value={mobile}>
       <Show when={input.viewProps.application} keyed fallback={<View {...input.viewProps} />}>
         {(application) => (
           <ApplicationProvider value={application}>
@@ -513,6 +541,8 @@ function ChatContent(input: { props: ChatProps; questions: ComposerQuestions }) 
   return (
     <section
       class={["chat", { "chat--bubbles": input.props.chatBubbleMode }]}
+      // Person references resolve session-scoped people for callers without directory access.
+      data-chat-session-key={input.props.sessionKey}
       style={
         input.props.chatMessageMaxWidth
           ? {

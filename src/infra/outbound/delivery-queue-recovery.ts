@@ -60,7 +60,7 @@ import {
   createDeliveryQueueMediaRetention,
 } from "./delivery-queue-media-staging.js";
 import {
-  buildReconciledSentResult,
+  captureReconciledSentResult,
   buildUnknownSendContext,
   needsUnknownSendReconciliation,
   reconcileUnknownQueuedDelivery,
@@ -386,7 +386,7 @@ async function runReconciledSentCommitHooks(params: {
   if (!afterCommit) {
     return;
   }
-  const result = buildReconciledSentResult(params.entry, params.reconciliation);
+  const { result } = captureReconciledSentResult(params.entry, params.reconciliation);
   try {
     const { entry } = params;
     const payload = preparedOutboundPayloads(entry.preparedBatch)[0] ?? {};
@@ -553,7 +553,7 @@ async function drainQueuedEntry(
       }));
     if (reconciliation?.status === "sent") {
       try {
-        const result = buildReconciledSentResult(entry, reconciliation);
+        const { result, placement } = captureReconciledSentResult(entry, reconciliation);
         if (entry.deliveryCompletion) {
           await completeDurableDelivery(
             entry.deliveryCompletion,
@@ -570,7 +570,7 @@ async function drainQueuedEntry(
           );
         }
         await owner.ack();
-        await commitRecoveredVisibleMessages(opts, stateContext);
+        await commitRecoveredVisibleMessages(opts, stateContext, placement);
         emitRecoveredTerminalEvents(entry, { result });
         await runReconciledSentCommitHooks({
           entry,
@@ -1236,13 +1236,14 @@ export async function drainPendingDeliveriesCore(
   const drained = await recoveryCoordinator.withDrain(opts.drainKey, async () => {
     const now = Date.now();
     const matchingEntries = (await loadUnfinishedDeliveries(opts.stateDir, stateContext)).filter(
-      (entry) => shouldInspectQueuedDelivery(entry, now, opts.selectEntry),
+      (entry) => Boolean(entry.settlement) || opts.selectEntry(entry, now).match,
     );
+    // Leased matches still need a later scan, but cannot acquire an inspection claim yet.
     if (matchingEntries.length > 0) {
       opts.onPending?.();
     }
     await recoveryCoordinator.scan({
-      entries: matchingEntries,
+      entries: matchingEntries.filter((entry) => shouldInspectQueuedDelivery(entry, now)),
       laneKey: (entry) => recoveryLaneKey(entry, opts.cfg, stateContext.stateDir),
       loadEntry: (id) => loadUnfinishedDelivery(id, opts.stateDir, stateContext),
       onMissingEntry: (entry) => {
