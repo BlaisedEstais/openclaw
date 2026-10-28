@@ -894,7 +894,12 @@ describe("workboard terminal status writes", () => {
     "releases the claim and finishes the run when workboard_move targets %s",
     async (status) => {
       const store = createWorkboardSqliteTestStore();
-      const tools = toolsByName(createWorkboardTools({ store, context: { agentId: "agent-a" } }));
+      const tools = new Map(
+        createWorkboardTools({ store, context: { agentId: "agent-a" } }).map((tool) => [
+          tool.name,
+          tool,
+        ]),
+      );
       const { card, token } = await createDispatchedCard(store);
 
       const moved = readPayload(

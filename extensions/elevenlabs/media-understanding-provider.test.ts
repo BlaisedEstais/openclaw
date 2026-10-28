@@ -62,6 +62,7 @@ describe("elevenLabsMediaUnderstandingProvider", () => {
         webhook: "https://example.com/hook",
         model_id: "other_model",
         language_code: "fr",
+        // @ts-expect-error Deliberately malformed input exercises scalar-only query rejection.
         no_verbatim: ["true"],
       },
       fetchFn: fetchMock,

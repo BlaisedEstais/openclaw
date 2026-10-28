@@ -162,11 +162,14 @@ describe("Feishu app registration", () => {
   it("ends the registration poll at its monotonic deadline when the wall clock rewinds", async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn(async () => Response.json({ error: "authorization_pending" }));
-    mockRegistrationFetch({ fetchImpl: withFetchPreconnect(fetchMock) });
+    mockRegistrationFetch({
+      fetchImpl: withFetchPreconnect(fetchMock),
+      lookupFn: hermeticPublicLookup,
+    });
     // Settlement observer is attached before fake time advances, so the
     // recorded outcome can be asserted without leaving real timers behind.
     let outcome: string | undefined;
-    const poll = pollAppRegistration({ ...pollParams, interval: 5, expireIn: 30 }).then(
+    const poll = pollAppRegistration({ deviceCode: "device-code", interval: 5, expireIn: 30 }).then(
       (result) => {
         outcome = `settled:${result.status}`;
       },
