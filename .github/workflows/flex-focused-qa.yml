@@ -1,0 +1,126 @@
+{
+  "name": "Flex focused QA",
+  "on": {
+    "push": {
+      "branches": [
+        "qa/openai-flex-20261029"
+      ]
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "jobs": {
+    "qa": {
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 60,
+      "env": {
+        "OPENCLAW_VITEST_RUNTIME": "node",
+        "OPENCLAW_NODE_TEST_PLAN_CONTINUE_ON_FAILURE": "1",
+        "GOMEMLIMIT": "6GiB",
+        "GOGC": "100"
+      },
+      "defaults": {
+        "run": {
+          "shell": "bash"
+        }
+      },
+      "steps": [
+        {
+          "name": "Checkout exact Flex source",
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "ed5f21402c9a5054879544a7f2628378f2916bfb",
+            "fetch-depth": 2,
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Official Node and pnpm environment",
+          "uses": "./.github/actions/setup-node-env",
+          "with": {
+            "node-version": "24.22.1",
+            "semantic-checks": "true",
+            "install-bun": "true",
+            "install-deps": "true",
+            "cache-mode": "off"
+          }
+        },
+        {
+          "name": "Prepare focused verification",
+          "run": "mkdir -p .artifacts/flex-qa qa-results\npython3 - <<'PYCODE'\nfrom pathlib import Path\nimport json\nPath('.artifacts/flex-qa/tsconfig.json').write_text(json.dumps({'extends': '../../tsconfig.core.json', 'compilerOptions': {'tsBuildInfoFile': './types.tsbuildinfo', 'rootDir': '../..', 'noEmit': True}, 'include': ['../../src/agents/flex-processing.ts', '../../src/agents/flex-processing.test.ts', '../../src/agents/embedded-agent-runner/run/attempt-stream-settle.ts', '../../src/agents/embedded-agent-runner/run/attempt-stream.ts', '../../src/agents/embedded-agent-runner/run/attempt-recovery.ts', '../../src/agents/embedded-agent-runner/run/attempt.ts', '../../src/agents/embedded-agent-runner/run/failover-retry-controller.test.ts', '../../src/agents/embedded-agent-runner/run/llm-idle-timeout.flex-processing.test.ts', '../../src/agents/embedded-agent-runner/run/attempt-recovery.flex-processing.test.ts', '../../src/agents/model-extra-params.test.ts', '../../src/commands/doctor/shared/codex-route-warnings.ts', '../../src/types/node-runtime-globals.d.ts', '../../src/types/qrcode.d.ts', '../../src/types/agent-sessions.d.ts'], 'exclude': ['../../node_modules', '../../dist']},indent=2)+'\\n')\nPath('qa-results/changed-files.json').write_text(json.dumps(['docs/providers/openai/advanced.md', 'src/agents/embedded-agent-runner/run/attempt-recovery.flex-processing.test.ts', 'src/agents/embedded-agent-runner/run/attempt-recovery.test-support.ts', 'src/agents/embedded-agent-runner/run/attempt-recovery.ts', 'src/agents/embedded-agent-runner/run/attempt-stream-settle.ts', 'src/agents/embedded-agent-runner/run/attempt-stream.ts', 'src/agents/embedded-agent-runner/run/attempt.ts', 'src/agents/embedded-agent-runner/run/failover-retry-controller.test.ts', 'src/agents/embedded-agent-runner/run/failover-retry-controller.ts', 'src/agents/embedded-agent-runner/run/llm-idle-timeout.flex-processing.test.ts', 'src/agents/embedded-agent-runner/run/llm-idle-timeout.ts', 'src/agents/embedded-agent-runner/run/types.ts', 'src/agents/flex-processing.test.ts', 'src/agents/flex-processing.ts', 'src/agents/model-extra-params.test.ts', 'src/agents/model-extra-params.ts', 'src/commands/doctor/shared/codex-route-warnings.ts', 'test/vitest/vitest.database-worker-core-paths.mjs'],indent=2)+'\\n')\nPYCODE\n"
+        },
+        {
+          "name": "Formatting",
+          "id": "format",
+          "continue-on-error": true,
+          "timeout-minutes": 3,
+          "run": "node_modules/.bin/oxfmt --check docs/providers/openai/advanced.md src/agents/embedded-agent-runner/run/attempt-recovery.flex-processing.test.ts src/agents/embedded-agent-runner/run/attempt-recovery.test-support.ts src/agents/embedded-agent-runner/run/attempt-recovery.ts src/agents/embedded-agent-runner/run/attempt-stream-settle.ts src/agents/embedded-agent-runner/run/attempt-stream.ts src/agents/embedded-agent-runner/run/attempt.ts src/agents/embedded-agent-runner/run/failover-retry-controller.test.ts src/agents/embedded-agent-runner/run/failover-retry-controller.ts src/agents/embedded-agent-runner/run/llm-idle-timeout.flex-processing.test.ts src/agents/embedded-agent-runner/run/llm-idle-timeout.ts src/agents/embedded-agent-runner/run/types.ts src/agents/flex-processing.test.ts src/agents/flex-processing.ts src/agents/model-extra-params.test.ts src/agents/model-extra-params.ts src/commands/doctor/shared/codex-route-warnings.ts test/vitest/vitest.database-worker-core-paths.mjs 2>&1 | tee qa-results/format.log"
+        },
+        {
+          "name": "Focused lint",
+          "id": "lint",
+          "continue-on-error": true,
+          "timeout-minutes": 10,
+          "run": "node scripts/run-oxlint.mjs --tsconfig config/tsconfig/oxlint.core.json src/agents/embedded-agent-runner/run/attempt-recovery.flex-processing.test.ts src/agents/embedded-agent-runner/run/attempt-recovery.test-support.ts src/agents/embedded-agent-runner/run/attempt-recovery.ts src/agents/embedded-agent-runner/run/attempt-stream-settle.ts src/agents/embedded-agent-runner/run/attempt-stream.ts src/agents/embedded-agent-runner/run/attempt.ts src/agents/embedded-agent-runner/run/failover-retry-controller.test.ts src/agents/embedded-agent-runner/run/failover-retry-controller.ts src/agents/embedded-agent-runner/run/llm-idle-timeout.flex-processing.test.ts src/agents/embedded-agent-runner/run/llm-idle-timeout.ts src/agents/embedded-agent-runner/run/types.ts src/agents/flex-processing.test.ts src/agents/flex-processing.ts src/agents/model-extra-params.test.ts src/agents/model-extra-params.ts src/commands/doctor/shared/codex-route-warnings.ts test/vitest/vitest.database-worker-core-paths.mjs 2>&1 | tee qa-results/lint.log"
+        },
+        {
+          "name": "Focused types",
+          "id": "types",
+          "continue-on-error": true,
+          "timeout-minutes": 10,
+          "run": "node scripts/run-tsgo.mjs -p .artifacts/flex-qa/tsconfig.json --incremental 2>&1 | tee qa-results/types.log"
+        },
+        {
+          "name": "Affected behavioral and consumer tests",
+          "id": "tests",
+          "continue-on-error": true,
+          "timeout-minutes": 25,
+          "run": "node scripts/run-vitest.mjs run src/agents/flex-processing.test.ts src/agents/model-extra-params.test.ts src/commands/doctor/shared/codex-route-warnings.test.ts src/agents/embedded-agent-runner/run/failover-retry-controller.test.ts src/agents/embedded-agent-runner/run/llm-idle-timeout.flex-processing.test.ts src/agents/embedded-agent-runner/run/llm-idle-timeout.test.ts src/agents/embedded-agent-runner/run/attempt-recovery.flex-processing.test.ts src/agents/embedded-agent-runner/run/attempt-recovery.test.ts src/agents/embedded-agent-runner/run/attempt-stream-custody.test.ts src/agents/embedded-agent-runner/run/attempt-native-provider-authority.test.ts src/agents/embedded-agent-runner/run/attempt.test.ts --maxWorkers=1 2>&1 | tee qa-results/tests.log"
+        },
+        {
+          "name": "Verify baseline regression",
+          "id": "baseline",
+          "continue-on-error": true,
+          "timeout-minutes": 5,
+          "run": "python3 - <<'PYCODE'\nfrom pathlib import Path\nimport re,subprocess\nroot=Path.cwd(); owner=root/'src/agents/embedded-agent-runner/run/llm-idle-timeout.ts'\nbase=subprocess.check_output(['git','show','0ba1c7d5e:src/agents/embedded-agent-runner/run/llm-idle-timeout.ts'],text=True)\nbase=re.sub(r'((?:from|import)\\s*[\\(]?\\s*[\\\"\\'])(\\.[^\\\"\\']+)([\\\"\\'])',lambda m:m[1]+str((owner.parent/m[2]).resolve())+m[3],base)\n(root/'.artifacts/flex-qa/baseline-llm-idle-timeout.ts').write_text(base)\nPYCODE\ncat > .artifacts/flex-qa/verify-baseline.mts <<'JSCODE'\nimport { resolveLlmIdleTimeoutMs as baseIdle, resolveLlmFirstEventTimeoutMs as baseFirst } from './baseline-llm-idle-timeout.js';\nimport { resolveLlmIdleTimeoutMs as fixedIdle, resolveLlmFirstEventTimeoutMs as fixedFirst } from '../../src/agents/embedded-agent-runner/run/llm-idle-timeout.js';\nconst request = { model: { provider: 'openai', baseUrl: 'https://api.openai.com/v1' }, flexProcessing: true };\nconst baseline = [baseFirst(request), baseIdle(request)];\nconst fixed = [fixedFirst(request), fixedIdle(request)];\nif (baseline.some(ms => ms !== 120000) || fixed.some(ms => ms !== 600000)) throw new Error(JSON.stringify({baseline,fixed}));\nconsole.log(JSON.stringify({base:'0ba1c7d5e',baselineMs:baseline,fixedMs:fixed,regression:'base fails 600000ms Flex contract; fix passes'}));\nJSCODE\nnode --import ./scripts/tsx.mjs .artifacts/flex-qa/verify-baseline.mts 2>&1 | tee qa-results/baseline.log"
+        },
+        {
+          "name": "Build QA runtime",
+          "id": "build",
+          "continue-on-error": true,
+          "timeout-minutes": 15,
+          "run": "node --import ./scripts/tsx.mjs scripts/build-all.mts qaRuntime 2>&1 | tee qa-results/build.log"
+        },
+        {
+          "name": "Upload logs",
+          "if": "always()",
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "flex-qa-results",
+            "path": "qa-results/",
+            "retention-days": 1
+          }
+        },
+        {
+          "name": "Upload portable JavaScript runtime",
+          "if": "steps.build.outcome == 'success'",
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "flex-qa-runtime",
+            "path": "dist/\ndist-runtime/\npackages/*/dist/\nextensions/*/dist/",
+            "retention-days": 1
+          }
+        },
+        {
+          "name": "Require every verification",
+          "if": "always()",
+          "env": {
+            "OUTCOMES": "${{ steps.format.outcome }} ${{ steps.lint.outcome }} ${{ steps.types.outcome }} ${{ steps.tests.outcome }} ${{ steps.baseline.outcome }} ${{ steps.build.outcome }}"
+          },
+          "run": "for outcome in $OUTCOMES; do test \"$outcome\" = success || exit 1; done"
+        }
+      ]
+    }
+  }
+}
