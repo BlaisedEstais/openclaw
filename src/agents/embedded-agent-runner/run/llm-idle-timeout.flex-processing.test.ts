@@ -1,3 +1,4 @@
+import { toErrorObject } from "@openclaw/normalization-core/error-coercion";
 import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StreamFn } from "../../runtime/index.js";
@@ -55,9 +56,11 @@ describe("Flex request watchdogs", () => {
     const provider: StreamFn = (_model, _context, options) =>
       new Promise<Awaited<ReturnType<StreamFn>>>((_resolve, reject) => {
         providerSignal = options?.signal;
-        providerSignal?.addEventListener("abort", () => reject(providerSignal?.reason), {
-          once: true,
-        });
+        providerSignal?.addEventListener(
+          "abort",
+          () => reject(toErrorObject(providerSignal?.reason, "Provider request aborted")),
+          { once: true },
+        );
       });
     const pending = streamWithIdleTimeout(
       provider,

@@ -311,7 +311,9 @@ fallback even with explicit `agentRuntime.id: "codex"`; see
     ```
 
     For `high` reasoning or above, the option selects `serviceTier: "flex"` when
-    no tier was authored. It allows up to 10 minutes before the first event and
+    no tier was authored. An explicitly authored Flex tier can use the policy at
+    other reasoning levels. Official regional OpenAI endpoints are supported.
+    It allows up to 10 minutes before the first event and
     between events, and up to four retries for temporary capacity, overload,
     server, or request-timeout failures. Retries use exponential backoff with a
     one-minute base, a ten-minute cap, and 0.5–1.5x jitter, within a 30-minute

@@ -23,14 +23,17 @@ export function prepareFlexProcessingParams(params: {
   }
   const { flexProcessing, ...extraParams } = params.extraParams;
   const thinking = normalizeThinkLevel(params.thinkingLevel);
+  const endpoint = params.model.baseUrl ? URL.parse(params.model.baseUrl) : undefined;
   const eligible =
     flexProcessing === true &&
     params.model.api === "openai-responses" &&
-    (!params.model.baseUrl || URL.parse(params.model.baseUrl)?.hostname === "api.openai.com") &&
-    thinking !== undefined &&
-    THINKING_LEVEL_RANKS[thinking] >= THINKING_LEVEL_RANKS.high;
+    (!params.model.baseUrl ||
+      (endpoint?.protocol === "https:" &&
+        (endpoint.hostname === "api.openai.com" || endpoint.hostname.endsWith(".api.openai.com"))));
   if (
     eligible &&
+    thinking !== undefined &&
+    THINKING_LEVEL_RANKS[thinking] >= THINKING_LEVEL_RANKS.high &&
     !Object.hasOwn(extraParams, "serviceTier") &&
     !Object.hasOwn(extraParams, "service_tier")
   ) {

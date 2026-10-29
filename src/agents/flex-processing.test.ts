@@ -28,12 +28,30 @@ describe("prepared Flex Processing requests", () => {
     },
   );
 
+  it.each(["off", "minimal", "low", "medium", "adaptive"])(
+    "uses the opted-in policy for an explicitly authored Flex tier at %s reasoning",
+    (thinking) => {
+      const prepared = prepare({ flexProcessing: true, serviceTier: "flex" }, thinking);
+      expect(prepared.isFlexProcessing()).toBe(true);
+    },
+  );
+
+  it.each(["eu", "us"])("supports the official %s regional endpoint", (region) => {
+    const prepared = prepare({ flexProcessing: true }, "high", {
+      ...directModel,
+      baseUrl: `https://${region}.api.openai.com/v1`,
+    });
+    expect(prepared.extraParams).toEqual({ serviceTier: "flex" });
+    expect(prepared.isFlexProcessing()).toBe(true);
+  });
+
   it.each([
     { provider: "openai", api: "openai-completions", baseUrl: directModel.baseUrl },
     { ...directModel, baseUrl: "https://proxy.example/v1" },
     { ...directModel, baseUrl: "https://api.openai.com.example/v1" },
     { ...directModel, baseUrl: "https://chatgpt.com/backend-api" },
     { ...directModel, baseUrl: "invalid endpoint" },
+    { ...directModel, baseUrl: "http://api.openai.com/v1" },
   ])("keeps ordinary policy for the unsupported route $api/$baseUrl", (model) => {
     const prepared = prepare({ flexProcessing: true }, "high", model);
     expect(prepared.extraParams).toEqual({});
