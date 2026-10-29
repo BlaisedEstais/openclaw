@@ -30,8 +30,8 @@
           "name": "Checkout exact Flex source",
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
           "with": {
-            "ref": "ed5f21402c9a5054879544a7f2628378f2916bfb",
-            "fetch-depth": 2,
+            "ref": "244548fcafbf77e9015d999d4302a525d8d713ee",
+            "fetch-depth": 3,
             "persist-credentials": false
           }
         },
@@ -108,8 +108,9 @@
           "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
           "with": {
             "name": "flex-qa-runtime",
-            "path": "dist/\ndist-runtime/\npackages/*/dist/\nextensions/*/dist/",
-            "retention-days": 1
+            "path": "dist/\ndist-runtime/\npackages/*/dist/\nextensions/*/dist/\n!**/*.map",
+            "retention-days": 1,
+            "compression-level": 1
           }
         },
         {
