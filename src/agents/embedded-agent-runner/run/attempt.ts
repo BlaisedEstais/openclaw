@@ -478,6 +478,7 @@ async function runEmbeddedAttemptOwned(
         providerRequestTimeoutExplicit:
           providerRetry.timeoutMs !== undefined || params.model.requestTimeoutMs !== undefined,
         providerRetryMaxDelayMs: providerRetry.maxRetryDelayMs,
+        providerFlexProcessing: preparedSessionRuntime.transport.isFlexProcessing(),
         ...(catalogSession
           ? {
               bridgeCalls: {
