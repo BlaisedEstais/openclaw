@@ -1,0 +1,47 @@
+{
+  "name": "Flex prompt-prefix QA",
+  "on": {
+    "push": {
+      "branches": [
+        "qa/openai-flex-prefix-20261030"
+      ]
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "jobs": {
+    "prefix": {
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 20,
+      "env": {
+        "OPENCLAW_VITEST_RUNTIME": "node",
+        "GOMEMLIMIT": "6GiB",
+        "GOGC": "100"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "ref": "244548fcafbf77e9015d999d4302a525d8d713ee",
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "./.github/actions/setup-node-env",
+          "with": {
+            "node-version": "24.22.1",
+            "semantic-checks": "true",
+            "install-bun": "true",
+            "install-deps": "true",
+            "cache-mode": "off"
+          }
+        },
+        {
+          "name": "Required prompt-prefix invariant",
+          "run": "node scripts/run-vitest.mjs run src/agents/agent-tools.prefix-stability.test.ts --maxWorkers=1"
+        }
+      ]
+    }
+  }
+}
