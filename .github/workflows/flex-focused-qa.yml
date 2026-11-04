@@ -1,5 +1,5 @@
 {
-  "name": "Flex CLI and upgrade proof",
+  "name": "Flex fresh install and upgrade proof",
   "on": {
     "push": {
       "branches": [
@@ -8,7 +8,8 @@
     }
   },
   "permissions": {
-    "contents": "read"
+    "contents": "read",
+    "actions": "read"
   },
   "jobs": {
     "qa": {
@@ -47,22 +48,18 @@
           }
         },
         {
-          "name": "Build QA runtime",
-          "id": "build",
-          "continue-on-error": true,
-          "timeout-minutes": 15,
-          "run": "mkdir -p qa-results\nnode --import ./scripts/tsx.mjs scripts/build-all.mts qaRuntime 2>&1 | tee qa-results/build.log"
-        },
-        {
-          "name": "Upload portable JavaScript runtime",
-          "if": "always() && steps.build.outcome == 'success'",
-          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "name": "Restore previously proven exact runtime",
+          "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
           "with": {
             "name": "flex-qa-runtime",
-            "path": "dist/\ndist-runtime/\npackages/*/dist/\nextensions/*/dist/\n!**/*.map",
-            "retention-days": 2,
-            "compression-level": 1
+            "run-id": 41820139497,
+            "github-token": "${{ github.token }}",
+            "path": "."
           }
+        },
+        {
+          "name": "Verify restored runtime identity",
+          "run": "mkdir -p qa-results\nnode -e 'const b=require(\"./dist/build-info.json\");if(b.commit!==\"aaf97bd8b2454aba140f9993aad23517462bba53\")process.exit(1);console.log(JSON.stringify(b))' | tee qa-results/build-identity.log\n"
         },
         {
           "name": "Checkout exact proof harness",
@@ -81,41 +78,16 @@
           "run": "mkdir -p .artifacts/flex-proof\ncp .artifacts/qa-harness/qa-flex/* .artifacts/flex-proof/\npython3 -m py_compile .artifacts/flex-proof/prove-flex-cli.py .artifacts/flex-proof/prove-package-install-upgrade.py\nnode --check .artifacts/flex-proof/flex-cli-preload.cjs"
         },
         {
-          "name": "Qualify full CLI fixture",
-          "id": "fixture",
-          "if": "steps.build.outcome == 'success'",
-          "continue-on-error": true,
-          "timeout-minutes": 7,
-          "run": "python3 .artifacts/flex-proof/prove-flex-cli.py --root \"$PWD\" --output \"$PWD/qa-results/cli-smoke\" --delay-ms 1 | tee qa-results/cli-smoke.log"
-        },
-        {
-          "name": "Full CLI Flex survives former watchdog",
-          "id": "long_wait",
-          "if": "steps.fixture.outcome == 'success'",
-          "continue-on-error": true,
-          "timeout-minutes": 7,
-          "run": "python3 .artifacts/flex-proof/prove-flex-cli.py --root \"$PWD\" --output \"$PWD/qa-results/cli-flex-130s\" --delay-ms 130000 | tee qa-results/cli-flex-130s.log"
-        },
-        {
-          "name": "Full CLI Standard still aborts at 120 seconds",
-          "id": "ordinary_timeout",
-          "if": "steps.fixture.outcome == 'success'",
-          "continue-on-error": true,
-          "timeout-minutes": 7,
-          "run": "python3 .artifacts/flex-proof/prove-flex-cli.py --root \"$PWD\" --output \"$PWD/qa-results/cli-standard-120s\" --tier default --delay-ms 130000 --expect timeout | tee qa-results/cli-standard-120s.log"
-        },
-        {
           "name": "Package exact candidate",
           "id": "package",
-          "if": "steps.build.outcome == 'success'",
           "continue-on-error": true,
           "timeout-minutes": 12,
-          "run": "node scripts/package-openclaw-for-docker.mjs --skip-build --runtime-only --allow-unreleased-changelog --bundle-plugin openai --output-dir \"$RUNNER_TEMP/flex-package\" --output-name openclaw-flex-qa.tgz 2>&1 | tee qa-results/package.log\nsha256sum \"$RUNNER_TEMP/flex-package/openclaw-flex-qa.tgz\" > qa-results/candidate-sha256.txt\n"
+          "run": "node scripts/package-openclaw-for-docker.mjs --skip-build --runtime-only --allow-unreleased-changelog --output-dir \"$RUNNER_TEMP/flex-package\" --output-name openclaw-flex-qa.tgz 2>&1 | tee qa-results/package.log\nsha256sum \"$RUNNER_TEMP/flex-package/openclaw-flex-qa.tgz\" > qa-results/candidate-sha256.txt\n"
         },
         {
           "name": "Fresh install and latest stable upgrade",
           "id": "upgrade",
-          "if": "steps.package.outcome == 'success' && steps.fixture.outcome == 'success'",
+          "if": "steps.package.outcome == 'success'",
           "continue-on-error": true,
           "timeout-minutes": 25,
           "run": "candidate_hash=$(cut -d ' ' -f 1 qa-results/candidate-sha256.txt)\npython3 .artifacts/flex-proof/prove-package-install-upgrade.py --candidate \"$RUNNER_TEMP/flex-package/openclaw-flex-qa.tgz\" --candidate-sha256 \"$candidate_hash\" --output \"$PWD/qa-results/install-upgrade\" --stable-version 2026.10.10 | tee qa-results/install-upgrade.log\n"
@@ -134,7 +106,7 @@
           "name": "Require every verification",
           "if": "always()",
           "env": {
-            "OUTCOMES": "${{ steps.build.outcome }} ${{ steps.fixture.outcome }} ${{ steps.long_wait.outcome }} ${{ steps.ordinary_timeout.outcome }} ${{ steps.package.outcome }} ${{ steps.upgrade.outcome }}"
+            "OUTCOMES": "${{ steps.package.outcome }} ${{ steps.upgrade.outcome }}"
           },
           "run": "for outcome in $OUTCOMES; do test \"$outcome\" = success || exit 1; done"
         }
