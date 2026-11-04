@@ -51,7 +51,18 @@
           "id": "build",
           "continue-on-error": true,
           "timeout-minutes": 15,
-          "run": "node --import ./scripts/tsx.mjs scripts/build-all.mts qaRuntime 2>&1 | tee qa-results/build.log"
+          "run": "mkdir -p qa-results\nnode --import ./scripts/tsx.mjs scripts/build-all.mts qaRuntime 2>&1 | tee qa-results/build.log"
+        },
+        {
+          "name": "Upload portable JavaScript runtime",
+          "if": "always() && steps.build.outcome == 'success'",
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "flex-qa-runtime",
+            "path": "dist/\ndist-runtime/\npackages/*/dist/\nextensions/*/dist/\n!**/*.map",
+            "retention-days": 2,
+            "compression-level": 1
+          }
         },
         {
           "name": "Checkout exact proof harness",
@@ -117,17 +128,6 @@
             "name": "flex-qa-results",
             "path": "qa-results/*.log\nqa-results/*.json\nqa-results/*.txt\nqa-results/cli-*/summary.json\nqa-results/cli-*/transport.jsonl\nqa-results/cli-*/stderr.log\nqa-results/cli-*/stdout.json\nqa-results/install-upgrade/*.stdout\nqa-results/install-upgrade/*.stderr\nqa-results/install-upgrade/summary.json\nqa-results/install-upgrade/stable-pin.json\nqa-results/install-upgrade/*-agent/summary.json\nqa-results/install-upgrade/*-agent/transport.jsonl\nqa-results/install-upgrade/*-agent/stderr.log",
             "retention-days": 7
-          }
-        },
-        {
-          "name": "Upload portable JavaScript runtime",
-          "if": "always() && steps.build.outcome == 'success'",
-          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
-          "with": {
-            "name": "flex-qa-runtime",
-            "path": "dist/\ndist-runtime/\npackages/*/dist/\nextensions/*/dist/\n!**/*.map",
-            "retention-days": 2,
-            "compression-level": 1
           }
         },
         {
